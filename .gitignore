@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# IDE / editor settings
+.idea/
+.vscode/
+*.suo
+*.user
+.DS_Store
+
+# OS generated
+Thumbs.db
+desktop.ini
+
+# Logs & debug
+*.log
+*.bak
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Model / data artifacts (add your own large files here)
+*.h5
+*.pkl
+*.pt
