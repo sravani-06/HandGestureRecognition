@@ -1,4 +1,4 @@
-# Hand Gesture Recognition 🖐️
+﻿# Hand Gesture Recognition 🖐️
 
 A real-time hand gesture recognition system built with **Python**, **OpenCV**, and **MediaPipe** that lets you control your PC's system volume using hand gestures — no hardware controllers needed.
 
@@ -20,11 +20,11 @@ A real-time hand gesture recognition system built with **Python**, **OpenCV**, a
 ```
 HandGestureRecognition/
 │
-├── HandTrackingModule.py       # Core reusable hand detector (MediaPipe wrapper)
-├── HandGestureRecognition.py   # Standalone gesture visualiser
-├── VolumeHandControl.py        # Volume control using HandTrackingModule
-├── VolumeControl.py            # Volume control using HandGestureRecognition module
+├── HandTrackingModule.py       # Core reusable hand detector (single source of truth)
+├── VolumeHandControl.py        # Simple pinch → volume (continuous)
+├── VolumeControl.py            # Pinch + commit gesture → volume (deliberate)
 │
+├── hand_landmarker.task        # MediaPipe hand landmark model (auto-downloaded)
 ├── requirements.txt            # Python dependencies
 ├── .gitignore
 └── README.md
@@ -40,10 +40,10 @@ HandGestureRecognition/
 Webcam Frame (BGR)
       │
       ▼
- Convert to RGB
+ Convert to RGB → mp.Image
       │
       ▼
- MediaPipe Hands  ──►  21 Landmark Coordinates (x, y, z)
+ MediaPipe HandLandmarker  ──►  21 Landmark Coordinates (x, y, z) per hand
       │
       ▼
  Map to pixel space  ──►  Draw skeleton / bounding box
@@ -52,7 +52,7 @@ Webcam Frame (BGR)
  Gesture logic  ──►  Pinch distance → Volume level
 ```
 
-### Volume Control Gesture
+### Volume Control Gestures
 
 | Gesture | Action |
 |---|---|
@@ -60,11 +60,20 @@ Webcam Frame (BGR)
 | Spread (thumb + index apart) | High volume |
 | Ring finger down | **Commit** volume change (`VolumeControl.py` only) |
 
+### Script Comparison
+
+| | `VolumeHandControl.py` | `VolumeControl.py` |
+|---|---|---|
+| **Trigger** | Every frame (continuous) | Ring finger down (deliberate) |
+| **Smoothing** | None | Rounds to nearest 10% |
+| **Hand filter** | None | Rejects hand if too close/far |
+| **Use case** | Quick direct control | Accident-resistant control |
+
 ---
 
 ## Prerequisites
 
-- Python 3.9 – 3.12
+- Python 3.9+  (tested on 3.13)
 - A webcam connected to your PC
 - Windows OS (required for `pycaw` audio control)
 
@@ -83,7 +92,13 @@ python -m venv .venv
 
 # 3. Install dependencies
 pip install -r requirements.txt
+
+# 4. Download the MediaPipe hand landmark model
+python -c "import urllib.request; urllib.request.urlretrieve('https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', 'hand_landmarker.task'); print('Model downloaded.')"
 ```
+
+> **Note:** The `hand_landmarker.task` model file is required by the MediaPipe Tasks API.
+> If you already have it in the project root, skip step 4.
 
 ---
 
@@ -95,14 +110,6 @@ Detects and displays hand landmarks from your webcam:
 
 ```bash
 python HandTrackingModule.py
-```
-
-### Hand Gesture Visualiser
-
-Visualises detected gestures and prints landmark positions:
-
-```bash
-python HandGestureRecognition.py
 ```
 
 ### Volume Hand Control (simple pinch)
@@ -156,13 +163,16 @@ python VolumeControl.py
 
 ## Dependencies
 
-| Package | Purpose |
-|---|---|
-| `opencv-python` | Camera capture & image rendering |
-| `mediapipe` | Hand landmark detection model |
-| `numpy` | Numerical operations & interpolation |
-| `pycaw` | Windows Core Audio API wrapper |
-| `comtypes` | COM interface for audio endpoint |
+| Package | Version | Purpose |
+|---|---|---|
+| `opencv-python` | ≥ 4.8.0 | Camera capture & image rendering |
+| `mediapipe` | 0.10.30 – 0.10.35 | Hand landmark detection (Tasks API) |
+| `numpy` | ≥ 1.24.0 | Numerical operations & interpolation |
+| `pycaw` | ≥ 20230407 | Windows Core Audio API wrapper |
+
+> **Why mediapipe 0.10.x?**  
+> mediapipe 1.0+ on Python 3.13/Windows removed the legacy `mp.solutions` namespace.
+> This project uses the Tasks API (`HandLandmarker`) which is available from 0.10.30 onward.
 
 ---
 
@@ -170,10 +180,13 @@ python VolumeControl.py
 
 | Problem | Fix |
 |---|---|
+| `module 'mediapipe' has no attribute 'solutions'` | Use mediapipe 0.10.30–0.10.35: `pip install "mediapipe==0.10.35"` |
+| `'AudioDevice' has no attribute 'Activate'` | pycaw API changed — already fixed; update to latest code |
+| `hand_landmarker.task` not found | Run the model download command in step 4 of Installation |
 | Blank / black camera feed | Change `cv2.VideoCapture(0)` to `(1)` or `(2)` |
-| `mediapipe` import error | Run `pip install mediapipe>=1.0.0` |
 | Audio not changing | Ensure you're on Windows; run as normal user (not admin) |
-| Low FPS | Reduce camera resolution (`WCAM`, `HCAM` constants) or lower `detectionCon` |
+| Low FPS | Reduce camera resolution (`WCAM`, `HCAM`) or lower `detectionCon` |
+| `W0000 inference_feedback_manager` warnings | Harmless MediaPipe internal warnings — safe to ignore |
 
 ---
 

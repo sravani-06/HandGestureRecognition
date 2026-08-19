@@ -8,9 +8,7 @@ import cv2
 import time
 import numpy as np
 import HandTrackingModule as htm
-from ctypes import cast, POINTER
-from comtypes import CLSCTX_ALL
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from pycaw.pycaw import AudioUtilities
 
 # ── Camera config ────────────────────────────────────────────────────────────
 WCAM, HCAM = 640, 480
@@ -22,10 +20,7 @@ cap.set(4, HCAM)
 # ── Audio endpoint ───────────────────────────────────────────────────────────
 detector = htm.handDetector(detectionCon=0.7)
 
-devices = AudioUtilities.GetSpeakers()
-interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-volume = cast(interface, POINTER(IAudioEndpointVolume))
-
+volume = AudioUtilities.GetSpeakers().EndpointVolume
 vol_range = volume.GetVolumeRange()
 min_vol = vol_range[0]
 max_vol = vol_range[1]

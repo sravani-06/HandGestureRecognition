@@ -1,15 +1,13 @@
 """
-Volume Control (advanced) — uses HandGestureRecognition module.
+Volume Control (advanced) — uses HandTrackingModule.
 Controls system volume via hand gesture: pinch thumb and index finger.
 Only sets volume when the ring finger is down (acts as a commit gesture).
 """
 
 import cv2
 import numpy as np
-import HandGestureRecognition as htm
-from ctypes import cast, POINTER
-from comtypes import CLSCTX_ALL
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+import HandTrackingModule as htm
+from pycaw.pycaw import AudioUtilities
 
 # ── Camera config ────────────────────────────────────────────────────────────
 WCAM, HCAM = 648, 488
@@ -22,10 +20,7 @@ cap.set(4, HCAM)
 detector = htm.handDetector(detectionCon=0.7, maxHands=1)
 
 # ── Audio endpoint ───────────────────────────────────────────────────────────
-devices = AudioUtilities.GetSpeakers()
-interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-volume = cast(interface, POINTER(IAudioEndpointVolume))
-
+volume = AudioUtilities.GetSpeakers().EndpointVolume
 vol_range = volume.GetVolumeRange()
 min_vol = vol_range[0]
 max_vol = vol_range[1]
